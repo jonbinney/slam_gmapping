@@ -350,7 +350,10 @@ SlamGMapping::initMapper(const sensor_msgs::LaserScan& scan)
   gsp_laser_angle_increment_ = orientationFactor * scan.angle_increment;
   ROS_DEBUG("Laser angles top down in laser-frame: min: %.3f max: %.3f inc: %.3f", angle_min_, angle_max_, gsp_laser_angle_increment_);
 
-  GMapping::OrientedPoint gmap_pose(0, 0, 0);
+  double theta = angle_min_ + (gsp_laser_beam_count_ * gsp_laser_angle_increment_ / 2);
+  ROS_DEBUG("Theta for gmap_pose: %.3f", theta);
+
+  GMapping::OrientedPoint gmap_pose(0, 0, theta);
 
   // setting maxRange and maxUrange here so we can set a reasonable default
   ros::NodeHandle private_nh_("~");
@@ -542,7 +545,8 @@ SlamGMapping::updateMap(const sensor_msgs::LaserScan& scan)
   boost::mutex::scoped_lock(map_mutex_);
   GMapping::ScanMatcher matcher;
   double* laser_angles = new double[scan.ranges.size()];
-  double theta = angle_min_;
+  // this is how GMapping internally calculates the min_angle
+  double theta = -gsp_laser_angle_increment_ * scan.ranges.size() / 2;
   for(unsigned int i=0; i<scan.ranges.size(); i++)
   {
     if (gsp_laser_angle_increment_ < 0)
